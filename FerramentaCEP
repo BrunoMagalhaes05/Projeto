@@ -30,10 +30,12 @@ ui <- fluidPage(
       tabsetPanel(
         tabPanel("Process",
                  tableOutput("part_history"),
+                 downloadButton("download_history", "Export to CSV"),  # <-- botão de exportação
                  fluidRow(
                    column(4, div(class = "green-box", h4("Supplier Material"), verbatimTextOutput("supplier_material"))),
                    column(4, div(class = "green-box", h4("Rougher Turn"), verbatimTextOutput("rougher_turn"))),
                    column(4, div(class = "green-box", h4("Finish Turn"), verbatimTextOutput("finish_turn"))))),
+        
         tabPanel("Settings",
                  numericInput("supplier_mean", "Supplier Mean", value = 1250, min = 1000, max = 1500),
                  numericInput("supplier_sd", "Supplier Standard Deviation", value = 50),
@@ -41,6 +43,7 @@ ui <- fluidPage(
                  numericInput("rougher_noise_sd", "Rougher Noise SD", value = 10),
                  numericInput("finisher_subtract_mean", "Finisher Subtract Mean", value = 200, min = 100, max = 300),
                  numericInput("finisher_subtract_sd", "Finisher Subtract SD", value = 50)),
+        
         tabPanel("Diagram",
                  grVizOutput("diagram"))))))
 
@@ -64,7 +67,11 @@ server <- function(input, output, session) {
     updateNumericInput(session, "num_samples", value = input$num_samples + 1)})
   
   observeEvent(input$copy_scratch, {
-    new_entry <- data.frame(Supplier = process_data$supplier, Rougher = process_data$rougher, Finisher = process_data$finisher, RougherNumber = input$choose_rougher)
+    new_entry <- data.frame(
+      Supplier = round(process_data$supplier, 3),
+      Rougher = round(process_data$rougher, 3),
+      Finisher = round(process_data$finisher, 3),
+      RougherNumber = input$choose_rougher)
     process_data$history <- rbind(process_data$history, new_entry)})
   
   observeEvent(input$clear_scratch, {
@@ -72,16 +79,25 @@ server <- function(input, output, session) {
     updateNumericInput(session, "num_samples", value = 0)})
   
   output$supplier_material <- renderText({
-    process_data$supplier})
+    if (is.null(process_data$supplier)) return("—")
+    round(process_data$supplier, 3)})
   
   output$rougher_turn <- renderText({
-    process_data$rougher})
+    if (is.null(process_data$rougher)) return("—")
+    round(process_data$rougher, 3)})
   
   output$finish_turn <- renderText({
-    process_data$finisher})
+    if (is.null(process_data$finisher)) return("—")
+    round(process_data$finisher, 3)})
   
   output$part_history <- renderTable({
     process_data$history})
+  
+  output$download_history <- downloadHandler(
+    filename = function() {
+      paste("part_history_", Sys.Date(), ".csv", sep = "")},
+    content = function(file) {
+      write.table(process_data$history, file, sep = ";", dec = ",", row.names = FALSE, col.names = TRUE, fileEncoding = "UTF-8")})
   
   naes <- node_aes(
     shape = "box",
@@ -116,9 +132,9 @@ server <- function(input, output, session) {
       add_node(label = "Rougher #2", node_aes = if(input$choose_rougher == "Rougher Turn #2") naes3 else naes) |>
       add_node(label = "Rougher #3", node_aes = if(input$choose_rougher == "Rougher Turn #3") naes3 else naes) |>
       add_node(label = "Finisher", node_aes = naes3) |>
-      add_node(label = process_data$supplier, node_aes = naes2) |>
-      add_node(label = process_data$rougher, node_aes = naes2) |> 
-      add_node(label = process_data$finisher, node_aes = naes2) |> 
+      add_node(label = round(process_data$supplier, 3), node_aes = naes2) |>
+      add_node(label = round(process_data$rougher, 3), node_aes = naes2) |> 
+      add_node(label = round(process_data$finisher, 3), node_aes = naes2) |> 
       
       add_edge(from = 1, to = 6, edge_aes = eaes1) |> 
       add_edge(from = 6, to = 2, edge_aes = if(input$choose_rougher == "Rougher Turn #1") eaes1 else eaes2) |> 
@@ -134,4 +150,3 @@ server <- function(input, output, session) {
     grViz(generate_dot(graph())))}
 
 shinyApp(ui = ui, server = server)
-
