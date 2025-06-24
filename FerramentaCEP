@@ -30,7 +30,7 @@ ui <- fluidPage(
       tabsetPanel(
         tabPanel("Process",
                  tableOutput("part_history"),
-                 downloadButton("download_history", "Export to CSV"),  # <-- botão de exportação
+                 downloadButton("download_history", "Export to CSV"),
                  fluidRow(
                    column(4, div(class = "green-box", h4("Supplier Material"), verbatimTextOutput("supplier_material"))),
                    column(4, div(class = "green-box", h4("Rougher Turn"), verbatimTextOutput("rougher_turn"))),
