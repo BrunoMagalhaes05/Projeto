@@ -13,7 +13,7 @@ ui <- fluidPage(
       .green-box h4 {
         font-weight: bold;}"))),
   
-  titlePanel("Pedagogical Tool For Statistical Process Control"),
+  titlePanel("Shiny Virtual Factory"),
   
   sidebarLayout(
     sidebarPanel(
